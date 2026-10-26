@@ -191,9 +191,7 @@ export default function PrismWorkspace() {
         setError(e.message || t.error);
         setMessages((prev) => prev.at(-1)?.role === "assistant" && !prev.at(-1)?.content ? prev.slice(0, -1) : prev);
       } else {
-        setMessages((previous) => previous.map((m, i) => i === previous.length - 1 && m.role === "assistant" ? { ...m, content: `${m.content}${m.content ? "
-
-" : ""}${t.stopNote}` } : m));
+        setMessages((previous) => previous.map((m, i) => i === previous.length - 1 && m.role === "assistant" ? { ...m, content: `${m.content}${m.content ? "\n\n" : ""}${t.stopNote}` } : m));
       }
     } finally { setBusy(false); abortRef.current = null; inputRef.current?.focus(); }
   }
