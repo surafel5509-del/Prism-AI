@@ -18,6 +18,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Lint application
+        run: npm run lint
       - name: Build application
         run: npm run build
         env:
