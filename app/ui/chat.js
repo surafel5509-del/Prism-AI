@@ -100,8 +100,8 @@ function saveDownload(filename, content, type = "text/plain;charset=utf-8") {
 export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
-  const [effort, setEffort] = useState("high");
-  const [maxOutputTokens, setMaxOutputTokens] = useState(8192);
+  const [effort, setEffort] = useState("standard");
+  const [maxOutputTokens, setMaxOutputTokens] = useState(4096);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
