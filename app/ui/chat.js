@@ -64,7 +64,7 @@ function slugify(value) {
 function extractArtifacts(text) {
   const found = [];
   const fence = String.fromCharCode(96).repeat(3);
-  const regex = new RegExp(fence + "([^\\n]*)\\n([\\s\\S]*?)" + fence, "g");
+  const regex = new RegExp(fence + "([^\\n]*)\\n([\\s\\S]*?)(?:" + fence + "|$)", "g");
   let match;
   while ((match = regex.exec(text))) {
     const label = match[1].trim();
@@ -80,6 +80,13 @@ function extractArtifacts(text) {
     found.push({ id: found.length + "-" + slugify(filename), filename, language, content });
   }
   return found;
+}
+
+
+function displayMessage(text) {
+  const fence = String.fromCharCode(96).repeat(3);
+  const regex = new RegExp(fence + "[^\\n]*\\n[\\s\\S]*?(?:" + fence + "|$)", "g");
+  return text.replace(regex, "[Generated code is available in Code Studio]");
 }
 
 function saveDownload(filename, content, type = "text/plain;charset=utf-8") {
@@ -236,7 +243,7 @@ export default function PrismWorkspace() {
           </div> : <div className="message-list">{messages.map((message, index) => <article className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"}`} key={`${index}-${message.role}`}>
             {message.role === "assistant" && <div className="assistant-avatar"><Icon name="spark" size={16}/></div>}
             <div className="message-content"><div className="message-meta">{message.role === "user" ? (lang === "am" ? "እርስዎ" : "You") : <><span>Prism AI</span>{mode === "agent" && <span className="agent-tag">AGENT</span>}</>}</div>
-              {message.role === "user" ? <div className="user-bubble"><div className="message-text">{message.content}</div></div> : <><div className="assistant-text">{message.content ? message.content.split("\n").map((line, i) => <span key={i}>{line || "\u00a0"}{i < message.content.split("\n").length - 1 && <br/>}</span>) : busy ? <div className="thinking"><span/><span/><span/><em>{t.working}</em></div> : null}</div>{message.content && <div className="message-tools"><button onClick={() => copyText(message.content)}><Icon name="copy" size={13}/>{copied ? t.copied : t.copy}</button>{extractArtifacts(message.content).length > 0 && <button onClick={() => setCodeOpen(true)}><Icon name="code" size={13}/>{t.code}</button>}</div>}</>}
+              {message.role === "user" ? <div className="user-bubble"><div className="message-text">{message.content}</div></div> : <><div className="assistant-text">{message.content ? displayMessage(message.content).split("\n").map((line, i) => <span key={i}>{line || "\u00a0"}{i < displayMessage(message.content).split("\n").length - 1 && <br/>}</span>) : busy ? <div className="thinking"><span/><span/><span/><em>{t.working}</em></div> : null}</div>{message.content && <div className="message-tools"><button onClick={() => copyText(message.content)}><Icon name="copy" size={13}/>{copied ? t.copied : t.copy}</button>{extractArtifacts(message.content).length > 0 && <button onClick={() => setCodeOpen(true)}><Icon name="code" size={13}/>{t.code}</button>}</div>}</>}
             </div>
           </article>)}<div ref={bottomRef}/></div>}
           {error && <div className="error-banner"><span>!</span><div>{error}</div><button onClick={() => setError("")} aria-label="Dismiss error"><Icon name="close" size={14}/></button></div>}
