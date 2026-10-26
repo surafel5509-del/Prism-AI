@@ -96,6 +96,9 @@ export async function POST(request) {
     const requestedTokens = Number(body.maxOutputTokens);
     // Keep the default responsive on Vercel's 60-second function limit.
     const maxTokens = OUTPUT_LIMITS.has(requestedTokens) ? requestedTokens : 4096;
+    // GLM-5.3-Flash defaults to maximum reasoning; reasoning tokens count against max_tokens.
+    // Explicitly map the UI levels so Balanced/4K can reach an answer before the Vercel timeout.
+    const reasoningEffort = effort === "standard" ? "low" : effort === "high" ? "high" : "max";
     const model = process.env.NVIDIA_MODEL || DEFAULT_MODEL;
     const ai = client();
     const upstream = await ai.chat.completions.create({
@@ -103,6 +106,7 @@ export async function POST(request) {
       messages: [{ role: "system", content: instructions({ mode, language, effort, codeMode }) }, ...messages],
       stream: true,
       max_tokens: maxTokens,
+      reasoning_effort: reasoningEffort,
       temperature: effort === "standard" ? 0.65 : 0.35,
     });
     const encoder = new TextEncoder();
