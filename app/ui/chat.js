@@ -63,23 +63,21 @@ function slugify(value) {
 
 function extractArtifacts(text) {
   const found = [];
-  const regex = /```([^
-`]*)
-([sS]*?)```/g;
+  const fence = String.fromCharCode(96).repeat(3);
+  const regex = new RegExp(fence + "([^\\n]*)\\n([\\s\\S]*?)" + fence, "g");
   let match;
   while ((match = regex.exec(text))) {
     const label = match[1].trim();
-    const content = match[2].replace(/
-$/, "");
+    const content = match[2].replace(/\n$/, "");
     if (!content.trim()) continue;
-    const bits = label.split(/s+/);
-    let filename = bits.find((bit) => /.[a-z0-9]{1,8}$/i.test(bit) || bit.includes("/"));
+    const bits = label.split(/\s+/);
+    let filename = bits.find((bit) => /\.[a-z0-9]{1,8}$/i.test(bit) || bit.includes("/"));
     const language = bits[0] || "text";
     if (!filename) {
       const ext = ({ html: "html", css: "css", javascript: "js", js: "js", jsx: "jsx", tsx: "tsx", typescript: "ts", ts: "ts", json: "json", python: "py", py: "py", bash: "sh", sql: "sql", markdown: "md", md: "md", yaml: "yml", xml: "xml", svg: "svg" })[language.toLowerCase()] || "txt";
-      filename = found.length === 0 && ["html", "css", "js", "jsx", "tsx", "ts", "json", "py", "sql", "md", "svg"].includes(ext) ? `index.${ext}` : `file-${found.length + 1}.${ext}`;
+      filename = found.length === 0 && ["html", "css", "js", "jsx", "tsx", "ts", "json", "py", "sql", "md", "svg"].includes(ext) ? "index." + ext : "file-" + (found.length + 1) + "." + ext;
     }
-    found.push({ id: `${found.length}-${slugify(filename)}`, filename: filename.split("/").pop(), language, content });
+    found.push({ id: found.length + "-" + slugify(filename), filename: filename.split("/").pop(), language, content });
   }
   return found;
 }
@@ -115,8 +113,7 @@ export default function PrismWorkspace() {
   const abortRef = useRef(null);
   const t = TEXT[lang];
   const activeArtifact = artifacts[selectedArtifact] || null;
-  const lines = activeArtifact ? activeArtifact.content.split("
-").length : 0;
+  const lines = activeArtifact ? activeArtifact.content.split("\n").length : 0;
 
   useEffect(() => {
     try {
@@ -241,9 +238,7 @@ export default function PrismWorkspace() {
           </div> : <div className="message-list">{messages.map((message, index) => <article className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"}`} key={`${index}-${message.role}`}>
             {message.role === "assistant" && <div className="assistant-avatar"><Icon name="spark" size={16}/></div>}
             <div className="message-content"><div className="message-meta">{message.role === "user" ? (lang === "am" ? "እርስዎ" : "You") : <><span>Prism AI</span>{mode === "agent" && <span className="agent-tag">AGENT</span>}</>}</div>
-              {message.role === "user" ? <div className="user-bubble"><div className="message-text">{message.content}</div></div> : <><div className="assistant-text">{message.content ? message.content.split("
-").map((line, i) => <span key={i}>{line || "\u00a0"}{i < message.content.split("
-").length - 1 && <br/>}</span>) : busy ? <div className="thinking"><span/><span/><span/><em>{t.working}</em></div> : null}</div>{message.content && <div className="message-tools"><button onClick={() => copyText(message.content)}><Icon name="copy" size={13}/>{copied ? t.copied : t.copy}</button>{extractArtifacts(message.content).length > 0 && <button onClick={() => setCodeOpen(true)}><Icon name="code" size={13}/>{t.code}</button>}</div>}</>}
+              {message.role === "user" ? <div className="user-bubble"><div className="message-text">{message.content}</div></div> : <><div className="assistant-text">{message.content ? message.content.split("\n").map((line, i) => <span key={i}>{line || "\u00a0"}{i < message.content.split("\n").length - 1 && <br/>}</span>) : busy ? <div className="thinking"><span/><span/><span/><em>{t.working}</em></div> : null}</div>{message.content && <div className="message-tools"><button onClick={() => copyText(message.content)}><Icon name="copy" size={13}/>{copied ? t.copied : t.copy}</button>{extractArtifacts(message.content).length > 0 && <button onClick={() => setCodeOpen(true)}><Icon name="code" size={13}/>{t.code}</button>}</div>}</>}
             </div>
           </article>)}<div ref={bottomRef}/></div>}
           {error && <div className="error-banner"><span>!</span><div>{error}</div><button onClick={() => setError("")} aria-label="Dismiss error"><Icon name="close" size={14}/></button></div>}
