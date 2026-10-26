@@ -16,7 +16,7 @@ function client() {
     throw error;
   }
   return new OpenAI({
-    baseURL: "https://integrate.api.nvidia.com/v1",
+    baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
     timeout: 48_000,
     maxRetries: 0,
