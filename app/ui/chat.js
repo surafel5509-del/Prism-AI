@@ -32,11 +32,9 @@ const TEXT = {
 };
 
 const MODELS = [
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash · Verified" },
-  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B · Free endpoint" },
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash · Temporarily unavailable", disabled: true },
-  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron · Temporarily unavailable", disabled: true },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash · Temporarily unavailable", disabled: true },
+  { id: "z-ai/glm-5.3", name: "GLM 5.3 - Powerful" },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash - Fast" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash - Verified" },
 ];
 
 const STARTERS = [
