@@ -6,7 +6,7 @@ export const maxDuration = 60;
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
 const OUTPUT_LIMITS = new Set([1024, 2048, 4096]);
-const DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash";
+const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 
 // NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
 // be retired, so provider errors are returned clearly rather than silently hidden.
@@ -120,28 +120,10 @@ function publicError(error, model) {
   return { status: Number.isInteger(status) && status >= 400 && status < 600 ? status : 502, message: "The NVIDIA AI request failed. Please retry. If it continues, check the NVIDIA API key, model access, and NVIDIA service status." };
 }
 
-export async function GET(request) {
+export async function GET() {
   try {
+    // Health check verifies NVIDIA API authentication and catalog connectivity.
     const ai = client();
-    const url = new URL(request.url);
-    if (url.searchParams.get("probe") === "1") {
-      const model = url.searchParams.get("model") || DEFAULT_MODEL;
-      if (!MODEL_IDS.has(model)) {
-        return Response.json({ connection: "error", error: "Unsupported model." }, { status: 400 });
-      }
-      const completion = await ai.chat.completions.create({
-        model,
-        messages: [{ role: "user", content: "Reply with exactly: Prism AI API test passed." }],
-        max_tokens: 24,
-        stream: false,
-        temperature: 0,
-      });
-      return Response.json({
-        connection: "ok",
-        model,
-        answer: completion.choices?.[0]?.message?.content || "",
-      }, { headers: { "Cache-Control": "no-store" } });
-    }
     const catalog = await ai.models.list();
     return Response.json({
       provider: "NVIDIA NIM",
