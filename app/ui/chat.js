@@ -32,10 +32,11 @@ const TEXT = {
 };
 
 const MODELS = [
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash (Free, tested)" },
-  { id: "nvidia/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (not hosted)", disabled: true },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash (timed out)", disabled: true },
-  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (endpoint unavailable)", disabled: true },
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash · Free" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash · Free" },
+  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron · Free" },
+  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B · Free" },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash · Free (may retire)" },
 ];
 
 const STARTERS = [
