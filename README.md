@@ -36,7 +36,7 @@ Edit `.env.local`:
 
 ```env
 NVIDIA_API_KEY=your_real_nvidia_api_key
-NVIDIA_MODEL=z-ai/glm-5.3-flash
+NVIDIA_MODEL=deepseek-ai/deepseek-v4.1-flash
 ```
 
 Confirm the exact model ID is available in your NVIDIA API catalog. Start the app with `npm run dev`, then open http://localhost:3000.
@@ -59,7 +59,7 @@ npm run build
 npm start
 ```
 
-The upstream NVIDIA API and selected model must be tested with your own API key before launch.
+The app's `/api/chat` GET endpoint checks NVIDIA API authentication and model-catalog connectivity. A real chat POST should also be tested after deployment; model access and free-endpoint availability can change over time.
 
 ## Deploy to Vercel
 
