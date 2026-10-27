@@ -97,11 +97,31 @@ function publicError(error, model) {
   return { status: Number.isInteger(status) && status >= 400 && status < 600 ? status : 502, message: "The NVIDIA AI request failed. Please retry. If it continues, check the NVIDIA API key, model access, and NVIDIA service status." };
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
     // A lightweight live check: verifies the configured key can reach NVIDIA's
     // OpenAI-compatible API without spending tokens on a generated completion.
     const ai = client();
+    const url = new URL(request.url);
+    if (url.searchParams.get("smoke") === "1") {
+      const completion = await ai.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
+        max_tokens: 32,
+        temperature: 0,
+        stream: false,
+      });
+      const answer = completion.choices?.[0]?.message?.content;
+      if (typeof answer !== "string" || !answer.trim()) {
+        throw new Error("NVIDIA accepted the request but returned no text.");
+      }
+      return Response.json({
+        provider: "NVIDIA NIM",
+        completion: "ok",
+        model: DEFAULT_MODEL,
+        answer,
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
     const catalog = await ai.models.list();
     return Response.json({
       provider: "NVIDIA NIM",
