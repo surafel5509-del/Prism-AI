@@ -32,13 +32,12 @@ const TEXT = {
 };
 
 const MODELS = [
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },
-  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4" },
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash" },
+  { id: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash" },
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (downloadable endpoint)" },
+  { id: "stepfun-ai/step-3.5-flash", name: "Step 3.5 Flash" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },
-  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B" },
-  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B" },
-  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning" },
+  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (unavailable on NVIDIA)", disabled: true },
 ];
 
 const STARTERS = [
@@ -111,7 +110,7 @@ export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
   const [effort, setEffort] = useState("standard");
-  const [model, setModel] = useState("deepseek-ai/deepseek-v4.1-flash");
+  const [model, setModel] = useState("minimaxai/minimax-m3.1-flash");
   const [maxOutputTokens, setMaxOutputTokens] = useState(4096);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -262,7 +261,7 @@ export default function PrismWorkspace() {
           {error && <div className="error-banner"><span>!</span><div>{error}</div><button onClick={() => setError("")} aria-label="Dismiss error"><Icon name="close" size={14}/></button></div>}
         </div>
 
-        <div className="composer-area"><div className="generation-toolbar"><div className="setting-group"><span className="setting-label">{t.model}</span><select className="model-select" value={model} onChange={(e) => setModel(e.target.value)} aria-label={t.model}>{MODELS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="setting-label">{t.settings}</span><select value={effort} onChange={(e) => setEffort(e.target.value)} aria-label="Thinking level"><option value="standard">{t.standard}</option><option value="high">{t.high}</option><option value="max">{t.max}</option></select><select value={maxOutputTokens} onChange={(e) => setMaxOutputTokens(Number(e.target.value))} aria-label={t.output}><option value={4096}>4K {t.output}</option><option value={8192}>8K {t.output}</option><option value={12288}>12K {t.output}</option><option value={16384}>16K {t.output}</option></select></div><label className={`code-mode-toggle ${codeMode ? "code-mode-on" : ""}`}><input type="checkbox" checked={codeMode} onChange={(e) => setCodeMode(e.target.checked)}/><Icon name="code" size={14}/><span>{t.codeMode}</span></label></div>
+        <div className="composer-area"><div className="generation-toolbar"><div className="setting-group"><span className="setting-label">{t.model}</span><select className="model-select" value={model} onChange={(e) => setModel(e.target.value)} aria-label={t.model}>{MODELS.map((item) => <option key={item.id} value={item.id} disabled={item.disabled}>{item.name}</option>)}</select><span className="setting-label">{t.settings}</span><select value={effort} onChange={(e) => setEffort(e.target.value)} aria-label="Thinking level"><option value="standard">{t.standard}</option><option value="high">{t.high}</option><option value="max">{t.max}</option></select><select value={maxOutputTokens} onChange={(e) => setMaxOutputTokens(Number(e.target.value))} aria-label={t.output}><option value={4096}>4K {t.output}</option><option value={8192}>8K {t.output}</option><option value={12288}>12K {t.output}</option><option value={16384}>16K {t.output}</option></select></div><label className={`code-mode-toggle ${codeMode ? "code-mode-on" : ""}`}><input type="checkbox" checked={codeMode} onChange={(e) => setCodeMode(e.target.checked)}/><Icon name="code" size={14}/><span>{t.codeMode}</span></label></div>
           <form className="composer" onSubmit={(e) => { e.preventDefault(); sendMessage(); }}><textarea ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={t.placeholder} rows={3} maxLength={50000} aria-label={t.placeholder}/><div className="composer-bottom"><span className="composer-hint">{mode === "agent" ? t.agentHint : t.chatHint} <span className="hint-divider">·</span> Shift + Enter</span><div className="composer-actions">{busy && <button type="button" className="stop-button" onClick={() => abortRef.current?.abort()} aria-label={t.stop}><Icon name="stop" size={14}/>{t.stop}</button>}<button className="send-button" type="submit" disabled={!input.trim() || busy} aria-label={t.send}><Icon name="send" size={17}/></button></div></div></form><div className="footer-note">{t.disclaimer}</div>
         </div>
       </section>
