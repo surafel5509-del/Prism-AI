@@ -34,6 +34,8 @@ const TEXT = {
 const MODELS = [
   { id: "z-ai/glm-5.3", name: "GLM 5.3 - Powerful" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash - Fast" },
+  { id: "stepfun-ai/step-5-preview", name: "Step 5 Preview" },
+  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super VL" },
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash - Verified" },
 ];
 
