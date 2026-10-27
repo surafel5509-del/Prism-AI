@@ -11,11 +11,9 @@ const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 // NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
 // be retired, so provider errors are returned clearly rather than silently hidden.
 export const MODELS = [
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Temporarily unavailable: endpoint timed out", enabled: false },
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint", enabled: true },
-  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron", tier: "Temporarily unavailable: endpoint returned 410", enabled: false },
-  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", tier: "Free endpoint", enabled: true },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Temporarily unavailable: endpoint timed out", enabled: false },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint · tested", rank: 1, enabled: true },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint · low-reasoning preset", rank: 2, enabled: true },
+  { id: "z-ai/glm-5.3", name: "GLM 5.3", tier: "Free endpoint · slower", rank: 3, enabled: true },
 ];
 const MODEL_IDS = new Set(MODELS.filter((model) => model.enabled).map((model) => model.id));
 
@@ -29,7 +27,7 @@ function client() {
   return new OpenAI({
     baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
-    timeout: 48_000,
+    timeout: 55_000,
     maxRetries: 0,
   });
 }
