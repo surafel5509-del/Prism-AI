@@ -33,6 +33,7 @@ const TEXT = {
 
 const MODELS = [
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash" },
+  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super" },
   { id: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash" },
   { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (downloadable endpoint)" },
   { id: "stepfun-ai/step-3.5-flash", name: "Step 3.5 Flash" },
