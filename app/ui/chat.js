@@ -33,10 +33,7 @@ const TEXT = {
 
 const MODELS = [
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash" },
-  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super" },
-  { id: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash" },
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (downloadable endpoint)" },
-  { id: "stepfun-ai/step-3.5-flash", name: "Step 3.5 Flash" },
+  { id: "nvidia/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },
   { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (unavailable on NVIDIA)", disabled: true },
 ];
