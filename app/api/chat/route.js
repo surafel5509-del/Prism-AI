@@ -11,18 +11,15 @@ const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 // Keep this list aligned with NVIDIA's published chat-capable/free-endpoint catalog.
 // The provider still decides whether a model is available to a particular API key.
 export const MODELS = [
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint" },
-  { id: "nvidia/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Free endpoint" },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint", enabled: true },
+  { id: "nvidia/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (not hosted on this endpoint)", tier: "Unavailable", enabled: false },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash (timed out in live test)", tier: "Unavailable", enabled: false },
+  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (NVIDIA returned 410)", tier: "Unavailable", enabled: false },
 ];
-const MODEL_IDS = new Set(MODELS.map((model) => model.id));
+const MODEL_IDS = new Set(MODELS.filter((model) => model.enabled).map((model) => model.id));
 
 function modelOptions(model) {
   if (model === "minimaxai/minimax-m3.1-flash") return { reasoning_effort: "low" };
-  if (model === "nvidia/deepseek-v4.1-flash") return { reasoning_effort: 1 };
-  if (model === "z-ai/glm-5.3-flash") {
-    return { reasoning_effort: "low", extra_body: { chat_template_kwargs: { clear_thinking: true } } };
-  }
   return {};
 }
 
@@ -91,6 +88,9 @@ function publicError(error, model) {
   if (status === 401 || status === 403 || /invalid api key|unauthorized|authentication/i.test(message)) {
     return { status: 502, message: "NVIDIA rejected the API key. In Vercel, check NVIDIA_API_KEY, replace it with a valid NVIDIA API key, then redeploy." };
   }
+  if (status === 410) {
+    return { status: 502, message: `The selected model "${model}" is not available through this NVIDIA hosted endpoint. Choose a model marked available or configure a separate provider.` };
+  }
   if (status === 404 || /model.*not found|unknown model|no such model/i.test(message)) {
     return { status: 502, message: `The selected model "${model}" is unavailable to this NVIDIA API key. Choose another model or check its access in NVIDIA API Catalog.` };
   }
@@ -108,49 +108,6 @@ export async function GET(request) {
     // A lightweight live check: verifies the configured key can reach NVIDIA's
     // OpenAI-compatible API without spending tokens on a generated completion.
     const ai = client();
-    const url = new URL(request.url);
-    if (url.searchParams.get("smoke") === "1") {
-      const requestedModel = url.searchParams.get("model") || DEFAULT_MODEL;
-      if (!MODEL_IDS.has(requestedModel)) {
-        return Response.json({ error: "Unsupported test model." }, { status: 400 });
-      }
-      try {
-        const completion = await ai.chat.completions.create({
-          model: requestedModel,
-          ...modelOptions(requestedModel),
-          messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
-          max_tokens: 512,
-          temperature: 0,
-          stream: true,
-        });
-        let answer = "";
-        let chunks = 0;
-        for await (const chunk of completion) {
-          chunks += 1;
-          const token = chunk.choices?.[0]?.delta?.content;
-          if (typeof token === "string") answer += token;
-        }
-        if (!answer.trim()) {
-          throw new Error(`NVIDIA returned ${chunks} streamed chunks but no visible answer text.`);
-        }
-        return Response.json({
-          provider: "NVIDIA NIM",
-          completion: "ok",
-          model: requestedModel,
-          answer: answer.slice(0, 500),
-          chunks,
-        }, { headers: { "Cache-Control": "no-store" } });
-      } catch (smokeError) {
-        const message = String(smokeError?.message || "Unknown provider error").replace(/nvapi-[A-Za-z0-9_-]+/gi, "[redacted]");
-        return Response.json({
-          provider: "NVIDIA NIM",
-          completion: "failed",
-          model: requestedModel,
-          providerStatus: smokeError?.status || smokeError?.statusCode || null,
-          providerError: message.slice(0, 500),
-        }, { status: 502, headers: { "Cache-Control": "no-store" } });
-      }
-    }
     const catalog = await ai.models.list();
     return Response.json({
       provider: "NVIDIA NIM",
