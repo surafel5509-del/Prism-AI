@@ -104,8 +104,12 @@ export async function GET(request) {
     const ai = client();
     const url = new URL(request.url);
     if (url.searchParams.get("smoke") === "1") {
+      const requestedModel = url.searchParams.get("model") || DEFAULT_MODEL;
+      if (!MODEL_IDS.has(requestedModel)) {
+        return Response.json({ error: "Unsupported test model." }, { status: 400 });
+      }
       const completion = await ai.chat.completions.create({
-        model: DEFAULT_MODEL,
+        model: requestedModel,
         messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
         max_tokens: 32,
         temperature: 0,
@@ -118,7 +122,7 @@ export async function GET(request) {
       return Response.json({
         provider: "NVIDIA NIM",
         completion: "ok",
-        model: DEFAULT_MODEL,
+        model: requestedModel,
         answer,
       }, { headers: { "Cache-Control": "no-store" } });
     }
