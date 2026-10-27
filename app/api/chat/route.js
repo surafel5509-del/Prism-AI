@@ -12,13 +12,20 @@ const DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash";
 // The provider still decides whether a model is available to a particular API key.
 export const MODELS = [
   { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Free endpoint" },
-  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron", tier: "Free endpoint" },
+  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4", tier: "NVIDIA API" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint" },
   { id: "openai/gpt-oss-20b", name: "GPT OSS 20B", tier: "Free endpoint" },
   { id: "google/gemma-4-31b-it", name: "Gemma 4 31B", tier: "Free endpoint" },
   { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning", tier: "Free endpoint" },
 ];
 const MODEL_IDS = new Set(MODELS.map((model) => model.id));
+
+function modelOptions(model) {
+  if (model === "minimaxai/minimax-m3.1-flash") return { reasoning_effort: "low" };
+  if (model === "mistralai/mistral-small-4-119b-2603") return { reasoning_effort: "none" };
+  return {};
+}
 
 function client() {
   const apiKey = process.env.NVIDIA_API_KEY;
@@ -111,6 +118,7 @@ export async function GET(request) {
       try {
         const completion = await ai.chat.completions.create({
           model: requestedModel,
+          ...modelOptions(requestedModel),
           messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
           max_tokens: 512,
           temperature: 0,
@@ -191,6 +199,7 @@ export async function POST(request) {
     // producing visible answer text. Stream output as soon as the provider emits it.
     const upstream = await ai.chat.completions.create({
       model,
+      ...modelOptions(model),
       messages: [{ role: "system", content: instructions({ mode, language, effort, codeMode }) }, ...messages],
       stream: true,
       max_tokens: maxTokens,
