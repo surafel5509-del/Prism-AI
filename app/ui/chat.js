@@ -33,7 +33,8 @@ const TEXT = {
 
 const MODELS = [
   { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },
-  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron" },
+  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },
   { id: "openai/gpt-oss-20b", name: "GPT OSS 20B" },
   { id: "google/gemma-4-31b-it", name: "Gemma 4 31B" },
