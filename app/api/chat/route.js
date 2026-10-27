@@ -5,7 +5,7 @@ export const maxDuration = 60;
 
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
-const OUTPUT_LIMITS = new Set([1024, 2048, 4096]);
+const OUTPUT_LIMITS = new Set([1024, 2048, 4096, 8192, 12000, 16000]);
 const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 
 // NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
