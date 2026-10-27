@@ -59,14 +59,16 @@ npm run build
 npm start
 ```
 
-The app's `/api/chat` GET endpoint checks NVIDIA API authentication and model-catalog connectivity. A real chat POST should also be tested after deployment; model access and free-endpoint availability can change over time.
+The app's `/api/chat` GET endpoint checks NVIDIA API authentication and model-catalog connectivity. The default is GLM 5.3 Flash; the server uses `NVIDIA_MODEL` when set. A catalog match confirms the model is listed, not that every generation request will succeed, so verify Chat and Agent after deployment. Free endpoint access and quotas can change over time.
+
+**OpenCode free-model note:** OpenCode Console documents that its free-tier chat models are restricted to the native OpenCode client and return HTTP 403 from other clients. Prism AI therefore does not list those OpenCode-only free IDs as working models. Prism uses the configured NVIDIA-compatible API for the currently listed endpoints. OpenCode paid/Go models require a separate supported setup and may incur charges.
 
 ## Deploy to Vercel
 
 1. Push this repository to GitHub.
 2. Visit https://vercel.com/new and import `surafel5509-del/Prism-AI`.
 3. In **Project Settings → Environment Variables**, add `NVIDIA_API_KEY` and `NVIDIA_MODEL`.
-4. Deploy and test both Chat and Agent modes.
+4. Deploy and test both Chat and Agent modes. The default model is `z-ai/glm-5.3-flash`; set `NVIDIA_MODEL` only to a model ID available to your NVIDIA key.
 
 Never commit `.env.local` or expose the NVIDIA key with a `NEXT_PUBLIC_` prefix.
 
