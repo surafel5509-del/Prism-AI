@@ -5,8 +5,20 @@ export const maxDuration = 60;
 
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
-const OUTPUT_LIMITS = new Set([4096, 8192, 12288, 16384]);
-const DEFAULT_MODEL = "z-ai/glm-5.3-flash";
+const OUTPUT_LIMITS = new Set([2048, 4096, 8192, 12288, 16384]);
+const DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash";
+
+// Keep this list aligned with NVIDIA's published chat-capable/free-endpoint catalog.
+// The provider still decides whether a model is available to a particular API key.
+export const MODELS = [
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Free endpoint" },
+  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron", tier: "Free endpoint" },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint" },
+  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B", tier: "Free endpoint" },
+  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B", tier: "Free endpoint" },
+  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning", tier: "Free endpoint" },
+];
+const MODEL_IDS = new Set(MODELS.map((model) => model.id));
 
 function client() {
   const apiKey = process.env.NVIDIA_API_KEY;
@@ -18,7 +30,7 @@ function client() {
   return new OpenAI({
     baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
-    timeout: 48_000,
+    timeout: 35_000,
     maxRetries: 0,
   });
 }
@@ -67,65 +79,94 @@ function instructions({ mode, language, effort, codeMode }) {
   return `${agent}\nRespond in ${languageName} unless the user clearly asks for another language.\n${depth}\n${code}\nNever invent tool execution, browsing, test results, or external actions. Distinguish suggestions from completed actions.`;
 }
 
-function publicError(error) {
+function publicError(error, model) {
   const status = error?.status || error?.statusCode;
   const message = String(error?.message || "");
   if (status === 401 || status === 403 || /invalid api key|unauthorized|authentication/i.test(message)) {
     return { status: 502, message: "NVIDIA rejected the API key. In Vercel, check NVIDIA_API_KEY, replace it with a valid NVIDIA API key, then redeploy." };
   }
   if (status === 404 || /model.*not found|unknown model|no such model/i.test(message)) {
-    return { status: 502, message: `The NVIDIA model "${process.env.NVIDIA_MODEL || DEFAULT_MODEL}" was not found or is unavailable to this key. Check the model ID in NVIDIA API Catalog.` };
+    return { status: 502, message: `The selected model "${model}" is unavailable to this NVIDIA API key. Choose another model or check its access in NVIDIA API Catalog.` };
   }
   if (status === 429 || /rate limit|too many requests|quota/i.test(message)) {
-    return { status: 429, message: "NVIDIA API rate limit or quota reached. Wait a little and try again." };
+    return { status: 429, message: "NVIDIA API rate limit or quota reached. Wait a little and try again, or select another available model." };
   }
-  if (/timed out|timeout|abort/i.test(message)) {
-    return { status: 504, message: "GLM 5.3 Flash took too long to respond. Try Balanced thinking, a shorter prompt, or a smaller output size." };
+  if (status === 408 || /timed out|timeout|abort/i.test(message)) {
+    return { status: 504, message: "The model took too long to respond. Try a shorter prompt, Balanced thinking, or a smaller output size." };
   }
   return { status: Number.isInteger(status) && status >= 400 && status < 600 ? status : 502, message: "The NVIDIA AI request failed. Please retry. If it continues, check the NVIDIA API key, model access, and NVIDIA service status." };
 }
 
+export async function GET() {
+  return Response.json({
+    models: MODELS,
+    defaultModel: DEFAULT_MODEL,
+    provider: "NVIDIA NIM",
+  }, {
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
 export async function POST(request) {
+  let model = DEFAULT_MODEL;
   try {
     const body = await request.json();
     const messages = cleanMessages(body.messages);
     const mode = body.mode === "agent" ? "agent" : "chat";
     const language = body.language === "am" ? "am" : "en";
-    const effort = ["standard", "high", "max"].includes(body.effort) ? body.effort : "high";
+    const effort = ["standard", "high", "max"].includes(body.effort) ? body.effort : "standard";
     const codeMode = Boolean(body.codeMode);
     const requestedTokens = Number(body.maxOutputTokens);
-    // Keep the default responsive on Vercel's 60-second function limit.
-    const maxTokens = OUTPUT_LIMITS.has(requestedTokens) ? requestedTokens : 4096;
-    // GLM-5.3-Flash defaults to maximum reasoning; reasoning tokens count against max_tokens.
-    // Explicitly map the UI levels so Balanced/4K can reach an answer before the Vercel timeout.
-    const reasoningEffort = effort === "standard" ? "low" : effort === "high" ? "high" : "max";
-    const model = process.env.NVIDIA_MODEL || DEFAULT_MODEL;
+    const maxTokens = OUTPUT_LIMITS.has(requestedTokens) ? requestedTokens : 2048;
+    const requestedModel = typeof body.model === "string" ? body.model : DEFAULT_MODEL;
+    if (!MODEL_IDS.has(requestedModel)) {
+      return Response.json({ error: "That model is not in the supported Prism AI model list. Refresh the page and choose a listed model." }, { status: 400 });
+    }
+    model = requestedModel;
     const ai = client();
+
+    // Avoid model-specific reasoning parameters: NVIDIA's OpenAI-compatible models
+    // do not all support them, and they can consume the whole token budget without
+    // producing visible answer text. Stream output as soon as the provider emits it.
     const upstream = await ai.chat.completions.create({
       model,
       messages: [{ role: "system", content: instructions({ mode, language, effort, codeMode }) }, ...messages],
       stream: true,
       max_tokens: maxTokens,
-      reasoning_effort: reasoningEffort,
-      temperature: effort === "standard" ? 0.65 : 0.35,
+      temperature: effort === "standard" ? 0.6 : 0.3,
     });
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        let emittedText = false;
         try {
           for await (const chunk of upstream) {
-            const token = chunk.choices?.[0]?.delta?.content;
-            if (token) controller.enqueue(encoder.encode(token));
+            const delta = chunk.choices?.[0]?.delta;
+            const token = typeof delta?.content === "string" ? delta.content : "";
+            if (token) {
+              emittedText = true;
+              controller.enqueue(encoder.encode(token));
+            }
+          }
+          if (!emittedText) {
+            controller.enqueue(encoder.encode("The selected model returned an empty answer. Please retry or choose another model."));
           }
           controller.close();
         } catch (error) {
-          // Fail the reader so the browser shows a useful retry message instead of
-          // rendering an upstream exception as if it were a successful AI answer.
-          controller.error(error);
+          const status = error?.status || error?.statusCode;
+          const message = status === 401 || status === 403
+            ? "NVIDIA rejected the API key. Check NVIDIA_API_KEY in Vercel."
+            : status === 429
+              ? "NVIDIA API rate limit or quota reached. Please retry later or choose another model."
+              : "The NVIDIA model stream failed before completing. Please retry or choose another model.";
+          try { controller.enqueue(encoder.encode(`\n\n[Prism AI error: ${message}]`)); } catch {}
+          controller.close();
         }
       },
       cancel() { upstream.controller?.abort?.(); },
     });
+
     return new Response(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
@@ -134,7 +175,7 @@ export async function POST(request) {
       },
     });
   } catch (error) {
-    const mapped = publicError(error);
+    const mapped = publicError(error, model);
     return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }
