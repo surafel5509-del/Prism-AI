@@ -146,6 +146,89 @@ export async function GET() {
   }
 }
 
+
+const AGENT_TOOLS = [
+  { type: "function", function: { name: "calculator", description: "Calculate arithmetic with +, -, *, /, %, ^ and parentheses.", parameters: { type: "object", properties: { expression: { type: "string" } }, required: ["expression"], additionalProperties: false } } },
+  { type: "function", function: { name: "current_datetime", description: "Get the current date and time in UTC.", parameters: { type: "object", properties: {}, required: [], additionalProperties: false } } },
+  { type: "function", function: { name: "unit_conversion", description: "Convert common length, mass, volume, and temperature units.", parameters: { type: "object", properties: { value: { type: "number" }, from: { type: "string" }, to: { type: "string" } }, required: ["value", "from", "to"], additionalProperties: false } } },
+  { type: "function", function: { name: "word_count", description: "Count words, characters, and lines in text.", parameters: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false } } },
+];
+
+function calculate(expression) {
+  if (typeof expression !== "string" || expression.length > 200) throw new Error("Expression is too long.");
+  const tokens = expression.match(/\d+(?:\.\d+)?|[()+\-*/%^]/g) || [];
+  if (tokens.join("") !== expression.replace(/\s+/g, "")) throw new Error("Unsupported arithmetic characters.");
+  let i = 0;
+  function atom() {
+    const t = tokens[i++];
+    if (t === "+" || t === "-") { const n = atom(); return t === "-" ? -n : n; }
+    if (t === "(") { const n = sum(); if (tokens[i++] !== ")") throw new Error("Missing closing parenthesis."); return n; }
+    if (!/^\d+(?:\.\d+)?$/.test(t || "")) throw new Error("Expected a number.");
+    return Number(t);
+  }
+  function power() { const n = atom(); if (tokens[i] === "^") { i++; return n ** power(); } return n; }
+  function product() { let n = power(); while (["*", "/", "%"].includes(tokens[i])) { const op = tokens[i++], rhs = power(); if ((op === "/" || op === "%") && rhs === 0) throw new Error("Division by zero."); n = op === "*" ? n * rhs : op === "/" ? n / rhs : n % rhs; } return n; }
+  function sum() { let n = product(); while (tokens[i] === "+" || tokens[i] === "-") { const op = tokens[i++], rhs = product(); n = op === "+" ? n + rhs : n - rhs; } return n; }
+  const result = sum();
+  if (i !== tokens.length || !Number.isFinite(result)) throw new Error("Invalid arithmetic expression.");
+  return result;
+}
+
+function runAgentTool(name, args) {
+  if (name === "calculator") return { result: calculate(args.expression) };
+  if (name === "current_datetime") return { iso: new Date().toISOString(), timezone: "UTC" };
+  if (name === "word_count") { const text = String(args.text || ""); return { words: (text.trim().match(/\S+/g) || []).length, characters: text.length, lines: text ? text.split(/\r?\n/).length : 0 }; }
+  if (name === "unit_conversion") {
+    const value = Number(args.value), from = String(args.from || "").toLowerCase().trim(), to = String(args.to || "").toLowerCase().trim();
+    if (!Number.isFinite(value)) throw new Error("Value must be a finite number.");
+    const groups = {
+      length: { m: 1, meter: 1, meters: 1, km: 1000, cm: .01, mm: .001, mi: 1609.344, mile: 1609.344, ft: .3048, feet: .3048, inch: .0254, in: .0254 },
+      mass: { kg: 1, kilogram: 1, g: .001, gram: .001, lb: .45359237, lbs: .45359237, oz: .028349523125 },
+      volume: { l: 1, liter: 1, liters: 1, ml: .001, gal: 3.785411784, gallon: 3.785411784 },
+    };
+    for (const [category, units] of Object.entries(groups)) if (units[from] && units[to]) return { value, from, to, result: value * units[from] / units[to], category };
+    const isC = ["c", "°c", "celsius"].includes(from), isF = ["f", "°f", "fahrenheit"].includes(from);
+    const toC = ["c", "°c", "celsius"].includes(to), toF = ["f", "°f", "fahrenheit"].includes(to);
+    if ((isC || isF) && (toC || toF)) { const c = isF ? (value - 32) * 5 / 9 : value; return { value, from, to, result: toF ? c * 9 / 5 + 32 : c, category: "temperature" }; }
+    throw new Error("Unsupported unit pair. Try m/km/mi/ft, kg/g/lb, l/ml/gal, or C/F.");
+  }
+  throw new Error("Unknown tool.");
+}
+
+function skillInstructions(messages, codeMode) {
+  const prompt = String(messages.at(-1)?.content || "").toLowerCase(), skills = [];
+  if (codeMode || /\b(code|program|debug|bug|repo|website|api|typescript|javascript|python|deploy|build an app)\b/.test(prompt)) skills.push("Engineering skill: provide maintainable complete solutions, edge cases, and tests. Never claim execution without evidence.");
+  if (/\b(analy[sz]e|compare|research|evaluate|evidence|source)\b/.test(prompt)) skills.push("Analysis skill: distinguish facts from assumptions, compare options using criteria, and state uncertainty.");
+  if (/\b(write|draft|rewrite|email|proposal|story|post)\b/.test(prompt)) skills.push("Writing skill: match audience and purpose, and provide polished usable copy.");
+  if (/\b(data|csv|spreadsheet|statistics|dataset|chart|metrics)\b/.test(prompt)) skills.push("Data skill: validate assumptions and calculations; never invent data.");
+  return skills.length ? "\n\nActivated skills:\n" + skills.join("\n") : "";
+}
+
+function modelOptions(model, effort) {
+  if (model === "minimaxai/minimax-m3.1-flash") return { temperature: 1, top_p: .95, extra_body: { chat_template_kwargs: { reasoning_effort: effort === "standard" ? "low" : "high" } } };
+  if (model.startsWith("z-ai/glm-5.3")) return { temperature: .5, extra_body: { chat_template_kwargs: { reasoning_effort: effort === "standard" ? "low" : "high", clear_thinking: true } } };
+  return { temperature: .5 };
+}
+
+async function runAgent(ai, model, messages, system, maxTokens, effort) {
+  const history = [{ role: "system", content: system + "\nYou can call real tools: calculator, current_datetime, unit_conversion, word_count. Use them when useful; only claim a tool ran if it did." }, ...messages];
+  for (let round = 0; round < 4; round++) {
+    const response = await ai.chat.completions.create({ model, messages: history, tools: AGENT_TOOLS, tool_choice: "auto", stream: false, max_tokens: Math.min(maxTokens, 4096), ...modelOptions(model, effort) });
+    const message = response.choices?.[0]?.message;
+    if (!message) throw new Error("The selected model returned an empty agent response.");
+    if (!message.tool_calls?.length) return message.content || "";
+    history.push({ role: "assistant", content: message.content || null, tool_calls: message.tool_calls });
+    for (const call of message.tool_calls) {
+      let result;
+      try { result = runAgentTool(call.function.name, JSON.parse(call.function.arguments || "{}")); }
+      catch (error) { result = { error: String(error?.message || "Tool execution failed.") }; }
+      history.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+    }
+  }
+  const final = await ai.chat.completions.create({ model, messages: history, stream: false, max_tokens: maxTokens, ...modelOptions(model, effort) });
+  return final.choices?.[0]?.message?.content || "";
+}
+
 export async function POST(request) {
   let model = DEFAULT_MODEL;
   try {
