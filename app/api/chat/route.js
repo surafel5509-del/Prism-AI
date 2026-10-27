@@ -112,19 +112,26 @@ export async function GET(request) {
         const completion = await ai.chat.completions.create({
           model: requestedModel,
           messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
-          max_tokens: 32,
+          max_tokens: 512,
           temperature: 0,
-          stream: false,
+          stream: true,
         });
-        const answer = completion.choices?.[0]?.message?.content;
-        if (typeof answer !== "string" || !answer.trim()) {
-          throw new Error("NVIDIA accepted the request but returned no text.");
+        let answer = "";
+        let chunks = 0;
+        for await (const chunk of completion) {
+          chunks += 1;
+          const token = chunk.choices?.[0]?.delta?.content;
+          if (typeof token === "string") answer += token;
+        }
+        if (!answer.trim()) {
+          throw new Error(`NVIDIA returned ${chunks} streamed chunks but no visible answer text.`);
         }
         return Response.json({
           provider: "NVIDIA NIM",
           completion: "ok",
           model: requestedModel,
-          answer,
+          answer: answer.slice(0, 500),
+          chunks,
         }, { headers: { "Cache-Control": "no-store" } });
       } catch (smokeError) {
         const message = String(smokeError?.message || "Unknown provider error").replace(/nvapi-[A-Za-z0-9_-]+/gi, "[redacted]");
