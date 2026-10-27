@@ -12,6 +12,7 @@ const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 // The provider still decides whether a model is available to a particular API key.
 export const MODELS = [
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint" },
+  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super", tier: "Free endpoint" },
   { id: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash", tier: "NVIDIA API" },
   { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Downloadable endpoint" },
   { id: "stepfun-ai/step-3.5-flash", name: "Step 3.5 Flash", tier: "Free endpoint" },
@@ -23,6 +24,7 @@ const MODEL_IDS = new Set(MODELS.map((model) => model.id));
 function modelOptions(model) {
   if (model === "minimaxai/minimax-m3.1-flash") return { reasoning_effort: "low" };
   if (model === "mistralai/mistral-small-4-119b-2603") return { reasoning_effort: "none" };
+  if (model === "nvidia/nemotron-3.5-super-vl-120b-a12b") return { extra_body: { chat_template_kwargs: { enable_thinking: false } } };
   return {};
 }
 
