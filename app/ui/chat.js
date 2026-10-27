@@ -189,6 +189,8 @@ export default function PrismWorkspace() {
         if (nextArtifacts.length) { setArtifacts(nextArtifacts); setSelectedArtifact(nextArtifacts.length - 1); setCodeOpen(true); }
       }
       answer += decoder.decode();
+      const streamError = answer.match(/\[Prism AI error: ([^\]]+)\]/);
+      if (streamError) throw new Error(streamError[1]);
       const completed = [...updated, { role: "assistant", content: answer || t.error }];
       setMessages(completed); persistConversation(completed);
       const finalArtifacts = extractArtifacts(answer);
@@ -196,7 +198,7 @@ export default function PrismWorkspace() {
     } catch (e) {
       if (e.name !== "AbortError") {
         setError(e.message || t.error);
-        setMessages((prev) => prev.at(-1)?.role === "assistant" && !prev.at(-1)?.content ? prev.slice(0, -1) : prev);
+        setMessages((prev) => prev.at(-1)?.role === "assistant" && (!prev.at(-1)?.content || prev.at(-1)?.content.includes("[Prism AI error:")) ? prev.slice(0, -1) : prev);
       } else {
         setMessages((previous) => previous.map((m, i) => i === previous.length - 1 && m.role === "assistant" ? { ...m, content: `${m.content}${m.content ? "\n\n" : ""}${t.stopNote}` } : m));
       }
