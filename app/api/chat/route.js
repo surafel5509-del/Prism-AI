@@ -120,18 +120,16 @@ function publicError(error, model) {
 
 export async function GET() {
   try {
-    // Health check verifies NVIDIA API authentication and catalog connectivity.
-    const ai = client();
-    const catalog = await ai.models.list();
+    const catalog = await client().models.list();
+    const ids = new Set((catalog.data || []).map((item) => item.id));
     return Response.json({
       provider: "NVIDIA NIM",
       connection: "ok",
       catalogCount: catalog.data.length,
       defaultModel: DEFAULT_MODEL,
-      models: MODELS,
-    }, {
-      headers: { "Cache-Control": "no-store" },
-    });
+      models: MODELS.map((item) => ({ ...item, inCatalog: ids.has(item.id) })),
+      agentTools: ["calculator", "current_datetime", "unit_conversion", "word_count"],
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const mapped = publicError(error, DEFAULT_MODEL);
     return Response.json({
@@ -139,13 +137,9 @@ export async function GET() {
       connection: "error",
       error: mapped.message,
       models: MODELS,
-    }, {
-      status: mapped.status,
-      headers: { "Cache-Control": "no-store" },
-    });
+    }, { status: mapped.status, headers: { "Cache-Control": "no-store" } });
   }
 }
-
 
 const AGENT_TOOLS = [
   { type: "function", function: { name: "calculator", description: "Calculate arithmetic with +, -, *, /, %, ^ and parentheses.", parameters: { type: "object", properties: { expression: { type: "string" } }, required: ["expression"], additionalProperties: false } } },
