@@ -11,11 +11,11 @@ const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 // NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
 // be retired, so provider errors are returned clearly rather than silently hidden.
 export const MODELS = [
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint · tested", rank: 1, enabled: true },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint · low-reasoning preset", rank: 2, enabled: true },
-  { id: "z-ai/glm-5.3", name: "GLM 5.3", tier: "Free endpoint · slower", rank: 3, enabled: true },
-  { id: "stepfun-ai/step-5-preview", name: "Step 5 Preview", tier: "Free endpoint · experimental", rank: 4, enabled: true },
-  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super VL", tier: "Free endpoint · experimental", rank: 5, enabled: true },
+  { id: "z-ai/glm-5.3", name: "GLM 5.3", tier: "Free endpoint - powerful, slower", rank: 1, enabled: true },
+  { id: "stepfun-ai/step-5-preview", name: "Step 5 Preview", tier: "Free endpoint - experimental", rank: 2, enabled: true },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint - tested", rank: 3, enabled: true },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint - low-reasoning preset", rank: 4, enabled: true },
+  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super VL", tier: "Free endpoint - experimental", rank: 5, enabled: true },
 ];
 const MODEL_IDS = new Set(MODELS.filter((model) => model.enabled).map((model) => model.id));
 
