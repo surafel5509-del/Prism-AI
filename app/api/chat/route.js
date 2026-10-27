@@ -239,24 +239,29 @@ export async function POST(request) {
     const effort = ["standard", "high", "max"].includes(body.effort) ? body.effort : "standard";
     const codeMode = Boolean(body.codeMode);
     const requestedTokens = Number(body.maxOutputTokens);
-    const maxTokens = OUTPUT_LIMITS.has(requestedTokens) ? requestedTokens : 2048;
+    const maxTokens = OUTPUT_LIMITS.has(requestedTokens) ? requestedTokens : 4096;
     const requestedModel = typeof body.model === "string" ? body.model : DEFAULT_MODEL;
     if (!MODEL_IDS.has(requestedModel)) {
       return Response.json({ error: "That model is not in the supported Prism AI model list. Refresh the page and choose a listed model." }, { status: 400 });
     }
     model = requestedModel;
     const ai = client();
+    const system = instructions({ mode, language, effort, codeMode }) + skillInstructions(messages, codeMode);
+    if (mode === "agent") {
+      const answer = await runAgent(ai, model, messages, system, maxTokens, effort);
+      if (!answer.trim()) throw new Error("The selected model returned an empty agent response.");
+      return new Response(answer, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Prism-Agent-Tools": "calculator,current_datetime,unit_conversion,word_count" } });
+    }
 
     // Avoid model-specific reasoning parameters: NVIDIA's OpenAI-compatible models
     // do not all support them, and they can consume the whole token budget without
     // producing visible answer text. Stream output as soon as the provider emits it.
     const upstream = await ai.chat.completions.create({
       model,
-      messages: [{ role: "system", content: instructions({ mode, language, effort, codeMode }) }, ...messages],
+      messages: [{ role: "system", content: system }, ...messages],
       stream: true,
       max_tokens: maxTokens,
-      temperature: model === "deepseek-ai/deepseek-v4.1-flash" ? 1 : effort === "standard" ? 0.6 : 0.3,
-      ...(model === "deepseek-ai/deepseek-v4.1-flash" ? { top_p: 0.95 } : {}),
+      ...modelOptions(model, effort),
     });
 
     const encoder = new TextEncoder();
