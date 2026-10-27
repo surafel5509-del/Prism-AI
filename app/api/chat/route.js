@@ -98,13 +98,32 @@ function publicError(error, model) {
 }
 
 export async function GET() {
-  return Response.json({
-    models: MODELS,
-    defaultModel: DEFAULT_MODEL,
-    provider: "NVIDIA NIM",
-  }, {
-    headers: { "Cache-Control": "no-store" },
-  });
+  try {
+    // A lightweight live check: verifies the configured key can reach NVIDIA's
+    // OpenAI-compatible API without spending tokens on a generated completion.
+    const ai = client();
+    const catalog = await ai.models.list();
+    return Response.json({
+      provider: "NVIDIA NIM",
+      connection: "ok",
+      catalogCount: catalog.data.length,
+      defaultModel: DEFAULT_MODEL,
+      models: MODELS,
+    }, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    const mapped = publicError(error, DEFAULT_MODEL);
+    return Response.json({
+      provider: "NVIDIA NIM",
+      connection: "error",
+      error: mapped.message,
+      models: MODELS,
+    }, {
+      status: mapped.status,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
 }
 
 export async function POST(request) {
