@@ -5,23 +5,19 @@ export const maxDuration = 60;
 
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
-const OUTPUT_LIMITS = new Set([2048, 4096, 8192, 12288, 16384]);
-const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
+const OUTPUT_LIMITS = new Set([1024, 2048, 4096]);
+const DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash";
 
-// Keep this list aligned with NVIDIA's published chat-capable/free-endpoint catalog.
-// The provider still decides whether a model is available to a particular API key.
+// NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
+// be retired, so provider errors are returned clearly rather than silently hidden.
 export const MODELS = [
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Free endpoint", enabled: true },
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint", enabled: true },
-  { id: "nvidia/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash (not hosted on this endpoint)", tier: "Unavailable", enabled: false },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash (timed out in live test)", tier: "Unavailable", enabled: false },
-  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (NVIDIA returned 410)", tier: "Unavailable", enabled: false },
+  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron", tier: "Free endpoint", enabled: true },
+  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", tier: "Free endpoint", enabled: true },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint (may be retired)", enabled: true },
 ];
 const MODEL_IDS = new Set(MODELS.filter((model) => model.enabled).map((model) => model.id));
-
-function modelOptions(model) {
-  if (model === "minimaxai/minimax-m3.1-flash") return { reasoning_effort: "low" };
-  return {};
-}
 
 function client() {
   const apiKey = process.env.NVIDIA_API_KEY;
@@ -33,7 +29,7 @@ function client() {
   return new OpenAI({
     baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
-    timeout: 55_000,
+    timeout: 48_000,
     maxRetries: 0,
   });
 }
@@ -45,14 +41,35 @@ function cleanMessages(messages) {
     throw error;
   }
   const cleaned = messages.map((message) => {
-    if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string") {
+    if (!message || !["user", "assistant"].includes(message.role)) {
       const error = new Error("A message has an invalid format. Please start a new conversation and try again.");
       error.status = 400;
       throw error;
     }
-    return { role: message.role, content: message.content.slice(0, MAX_INPUT_CHARS) };
+    if (typeof message.content === "string") {
+      return { role: message.role, content: message.content.slice(0, MAX_INPUT_CHARS) };
+    }
+    // NVIDIA supports OpenAI-compatible image_url parts in user messages.
+    if (message.role === "user" && Array.isArray(message.content)) {
+      const parts = message.content.map((part) => {
+        if (part?.type === "text" && typeof part.text === "string") {
+          return { type: "text", text: part.text.slice(0, MAX_INPUT_CHARS) };
+        }
+        const imageUrl = part?.type === "image_url" ? part.image_url?.url : null;
+        if (typeof imageUrl === "string" && (imageUrl.startsWith("https://") || /^data:image\/(png|jpeg|webp|gif);base64,/i.test(imageUrl))) {
+          return { type: "image_url", image_url: { url: imageUrl } };
+        }
+        const error = new Error("Image or message format is unsupported. Use HTTPS image URLs or PNG, JPEG, WebP, or GIF data URLs.");
+        error.status = 400;
+        throw error;
+      });
+      return { role: message.role, content: parts };
+    }
+    const error = new Error("A message has an invalid format. Please start a new conversation and try again.");
+    error.status = 400;
+    throw error;
   });
-  const total = cleaned.reduce((sum, message) => sum + message.content.length, 0);
+  const total = cleaned.reduce((sum, message) => sum + (typeof message.content === "string" ? message.content.length : JSON.stringify(message.content).length), 0);
   if (total > MAX_INPUT_CHARS) {
     const error = new Error("This conversation is too long for one request. Start a new chat and try again.");
     error.status = 400;
@@ -155,11 +172,11 @@ export async function POST(request) {
     // producing visible answer text. Stream output as soon as the provider emits it.
     const upstream = await ai.chat.completions.create({
       model,
-      ...modelOptions(model),
       messages: [{ role: "system", content: instructions({ mode, language, effort, codeMode }) }, ...messages],
       stream: true,
       max_tokens: maxTokens,
-      temperature: effort === "standard" ? 0.6 : 0.3,
+      temperature: model === "deepseek-ai/deepseek-v4.1-flash" ? 1 : effort === "standard" ? 0.6 : 0.3,
+      ...(model === "deepseek-ai/deepseek-v4.1-flash" ? { top_p: 0.95 } : {}),
     });
 
     const encoder = new TextEncoder();
