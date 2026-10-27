@@ -32,11 +32,11 @@ const TEXT = {
 };
 
 const MODELS = [
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash · Free" },
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash · Free" },
-  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron · Free" },
-  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B · Free" },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash · Free (may retire)" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash · Verified" },
+  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B · Free endpoint" },
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash · Temporarily unavailable", disabled: true },
+  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron · Temporarily unavailable", disabled: true },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash · Temporarily unavailable", disabled: true },
 ];
 
 const STARTERS = [
@@ -109,7 +109,7 @@ export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
   const [effort, setEffort] = useState("standard");
-  const [model, setModel] = useState("deepseek-ai/deepseek-v4.1-flash");
+  const [model, setModel] = useState("minimaxai/minimax-m3.1-flash");
   const [maxOutputTokens, setMaxOutputTokens] = useState(2048);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
