@@ -31,7 +31,16 @@ const TEXT = {
   },
 };
 
-const MODELS = [\n  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },\n  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron" },\n  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },\n  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B" },\n  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B" },\n  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning" },\n];\n\nconst STARTERS = [
+const MODELS = [
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },
+  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron" },
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },
+  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B" },
+  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B" },
+  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning" },
+];
+
+const STARTERS = [
   "Build a polished multi-page SaaS website with HTML, CSS, and JavaScript",
   "Create a complete React dashboard with responsive layout",
   "Explain an advanced topic step by step with examples",
