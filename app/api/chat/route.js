@@ -33,7 +33,7 @@ function client() {
   return new OpenAI({
     baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
-    timeout: 35_000,
+    timeout: 55_000,
     maxRetries: 0,
   });
 }
@@ -103,7 +103,7 @@ function publicError(error, model) {
   return { status: Number.isInteger(status) && status >= 400 && status < 600 ? status : 502, message: "The NVIDIA AI request failed. Please retry. If it continues, check the NVIDIA API key, model access, and NVIDIA service status." };
 }
 
-export async function GET(request) {
+export async function GET() {
   try {
     // A lightweight live check: verifies the configured key can reach NVIDIA's
     // OpenAI-compatible API without spending tokens on a generated completion.
