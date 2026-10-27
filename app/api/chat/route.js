@@ -6,18 +6,17 @@ export const maxDuration = 60;
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
 const OUTPUT_LIMITS = new Set([2048, 4096, 8192, 12288, 16384]);
-const DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash";
+const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
 
 // Keep this list aligned with NVIDIA's published chat-capable/free-endpoint catalog.
 // The provider still decides whether a model is available to a particular API key.
 export const MODELS = [
-  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Free endpoint" },
-  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4", tier: "NVIDIA API" },
   { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash", tier: "Free endpoint" },
+  { id: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash", tier: "NVIDIA API" },
+  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", tier: "Downloadable endpoint" },
+  { id: "stepfun-ai/step-3.5-flash", name: "Step 3.5 Flash", tier: "Free endpoint" },
   { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash", tier: "Free endpoint" },
-  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B", tier: "Free endpoint" },
-  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B", tier: "Free endpoint" },
-  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning", tier: "Free endpoint" },
+  { id: "mistralai/mistral-small-4-119b-2603", name: "Mistral Small 4 (unavailable on NVIDIA)", tier: "Unavailable" },
 ];
 const MODEL_IDS = new Set(MODELS.map((model) => model.id));
 
