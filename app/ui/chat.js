@@ -109,7 +109,8 @@ function saveDownload(filename, content, type = "text/plain;charset=utf-8") {
 export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
-  const [effort, setEffort] = useState("standard");\n  const [model, setModel] = useState("deepseek-ai/deepseek-v4.1-flash");
+  const [effort, setEffort] = useState("standard");
+  const [model, setModel] = useState("deepseek-ai/deepseek-v4.1-flash");
   const [maxOutputTokens, setMaxOutputTokens] = useState(4096);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
