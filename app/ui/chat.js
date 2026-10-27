@@ -32,11 +32,11 @@ const TEXT = {
 };
 
 const MODELS = [
+  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash - Default / Fast" },
+  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash" },
   { id: "z-ai/glm-5.3", name: "GLM 5.3 - Powerful" },
-  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash - Fast" },
-  { id: "stepfun-ai/step-5-preview", name: "Step 5 Preview" },
-  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super VL" },
-  { id: "minimaxai/minimax-m3.1-flash", name: "MiniMax M3.1 Flash - Verified" },
+  { id: "stepfun-ai/step-5-preview", name: "Step 5 Preview - Experimental" },
+  { id: "nvidia/nemotron-3.5-super-vl-120b-a12b", name: "Nemotron 3.5 Super VL - Experimental" },
 ];
 
 const STARTERS = [
@@ -109,7 +109,7 @@ export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
   const [effort, setEffort] = useState("standard");
-  const [model, setModel] = useState("minimaxai/minimax-m3.1-flash");
+  const [model, setModel] = useState("z-ai/glm-5.3-flash");
   const [maxOutputTokens, setMaxOutputTokens] = useState(2048);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
