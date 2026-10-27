@@ -6,7 +6,7 @@ export const maxDuration = 60;
 const MAX_INPUT_CHARS = 60_000;
 const MAX_MESSAGES = 60;
 const OUTPUT_LIMITS = new Set([1024, 2048, 4096, 8192, 12000, 16000]);
-const DEFAULT_MODEL = "minimaxai/minimax-m3.1-flash";
+const DEFAULT_MODEL = "z-ai/glm-5.3-flash";
 
 // NVIDIA-hosted API Catalog model IDs. Access can vary by account and models can
 // be retired, so provider errors are returned clearly rather than silently hidden.
@@ -29,7 +29,7 @@ function client() {
   return new OpenAI({
     baseURL: process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1",
     apiKey,
-    timeout: 55_000,
+    timeout: 45_000,
     maxRetries: 0,
   });
 }
@@ -200,15 +200,15 @@ function skillInstructions(messages, codeMode) {
   return skills.length ? "\n\nActivated skills:\n" + skills.join("\n") : "";
 }
 
-function modelOptions(model, effort) {
-  if (model === "minimaxai/minimax-m3.1-flash") return { temperature: 1, top_p: .95, extra_body: { chat_template_kwargs: { reasoning_effort: effort === "standard" ? "low" : "high" } } };
-  if (model.startsWith("z-ai/glm-5.3")) return { temperature: .5, extra_body: { chat_template_kwargs: { reasoning_effort: effort === "standard" ? "low" : "high", clear_thinking: true } } };
-  return { temperature: .5 };
+function modelOptions() {
+  // Keep provider-specific reasoning payloads off by default: catalog models differ
+  // in supported parameters, and unsupported options can cause empty output or stalls.
+  return {};
 }
 
 async function runAgent(ai, model, messages, system, maxTokens, effort) {
   const history = [{ role: "system", content: system + "\nYou can call real tools: calculator, current_datetime, unit_conversion, word_count. Use them when useful; only claim a tool ran if it did." }, ...messages];
-  for (let round = 0; round < 4; round++) {
+  for (let round = 0; round < 3; round++) {
     const response = await ai.chat.completions.create({ model, messages: history, tools: AGENT_TOOLS, tool_choice: "auto", stream: false, max_tokens: Math.min(maxTokens, 4096), ...modelOptions(model, effort) });
     const message = response.choices?.[0]?.message;
     if (!message) throw new Error("The selected model returned an empty agent response.");
