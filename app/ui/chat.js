@@ -11,7 +11,7 @@ const TEXT = {
     noCode: "Your code workspace is ready", noCodeDesc: "Ask Prism to build a website, app, script, or full project. Generated code will appear here, separate from the conversation.",
     copy: "Copy code", download: "Download file", downloadAll: "Export project", copied: "Copied", file: "File", lines: "lines", chars: "characters",
     welcomeTag: "YOUR IDEAS, AMPLIFIED", prompt1: "Build a complete modern website", prompt2: "Explain a complex topic deeply", prompt3: "Plan and implement an app", prompt4: "Review and improve my code",
-    agentHint: "Agent plans first, then creates a detailed answer", chatHint: "Fast, focused conversation", codeMode: "Prioritize code", language: "Language", settings: "Generation", emptyHistory: "Your chats stay in this browser.",
+    agentHint: "Agent plans first, then creates a detailed answer", chatHint: "Fast, focused conversation", codeMode: "Prioritize code", language: "Language", model: "AI model", settings: "Generation", emptyHistory: "Your chats stay in this browser.",
     error: "Something went wrong. Check the API key and model configuration, then try again.",
     stopNote: "Generation stopped.", ready: "Ready", working: "Working…", disclaimer: "AI can make mistakes. Review important information and generated code before using it.",
     menu: "Workspace", artifact: "Generated artifacts", noArtifacts: "No code artifacts yet", artifactsFound: "code blocks", editHint: "Edit code directly in this workspace. Your edits are local until you download them.",
@@ -25,13 +25,13 @@ const TEXT = {
     noCode: "የኮድ ቦታዎ ዝግጁ ነው", noCodeDesc: "Prismን ድረ-ገጽ፣ መተግበሪያ፣ ስክሪፕት ወይም ሙሉ ፕሮጀክት እንዲገነባ ይጠይቁ። ኮዱ ከውይይቱ ተለይቶ እዚህ ይታያል።",
     copy: "ኮድ ቅዳ", download: "ፋይል አውርድ", downloadAll: "ፕሮጀክት አውጣ", copied: "ተቀድቷል", file: "ፋይል", lines: "መስመሮች", chars: "ቁምፊዎች",
     welcomeTag: "ሀሳብዎን ወደ ትልቅ ውጤት", prompt1: "ዘመናዊ ድረ-ገጽ ገንባ", prompt2: "ከባድ ርዕስን በጥልቀት አስረዳ", prompt3: "መተግበሪያ እቅድ አውጣና ገንባ", prompt4: "ኮዴን ገምግምና አሻሽል",
-    agentHint: "Agent መጀመሪያ እቅድ ያወጣል፣ ከዚያ ዝርዝር ውጤት ይሰጣል", chatHint: "ፈጣንና ቀጥተኛ ውይይት", codeMode: "ኮድን ቅድሚያ ስጥ", language: "ቋንቋ", settings: "ማመንጨት", emptyHistory: "ውይይቶችዎ በዚህ አሳሽ ውስጥ ይቀመጣሉ።",
+    agentHint: "Agent መጀመሪያ እቅድ ያወጣል፣ ከዚያ ዝርዝር ውጤት ይሰጣል", chatHint: "ፈጣንና ቀጥተኛ ውይይት", codeMode: "ኮድን ቅድሚያ ስጥ", language: "ቋንቋ", model: "የAI ሞዴል", settings: "ማመንጨት", emptyHistory: "ውይይቶችዎ በዚህ አሳሽ ውስጥ ይቀመጣሉ።",
     error: "ችግር ተፈጥሯል። API ቁልፉንና የሞዴል ቅንብሩን ያረጋግጡና እንደገና ይሞክሩ።", stopNote: "ማመንጨት ቆሟል።", ready: "ዝግጁ", working: "በሥራ ላይ…", disclaimer: "AI ስህተት ሊሠራ ይችላል። አስፈላጊ መረጃንና ኮድን ከመጠቀምዎ በፊት ያረጋግጡ።",
     menu: "የሥራ ቦታ", artifact: "የተፈጠሩ ኮዶች", noArtifacts: "ገና ኮድ አልተፈጠረም", artifactsFound: "የኮድ ብሎኮች", editHint: "ኮዱን እዚህ በቀጥታ ያርትዑ። እስኪያወርዱት ድረስ ለእርስዎ ብቻ ነው።", saveHint: "መለያ አያስፈልግም · ውይይቶች በዚህ አሳሽ ይቀመጣሉ",
   },
 };
 
-const STARTERS = [
+const MODELS = [\n  { id: "deepseek-ai/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash" },\n  { id: "mistralai/mistral-nemotron", name: "Mistral Nemotron" },\n  { id: "z-ai/glm-5.3-flash", name: "GLM 5.3 Flash" },\n  { id: "openai/gpt-oss-20b", name: "GPT OSS 20B" },\n  { id: "google/gemma-4-31b-it", name: "Gemma 4 31B" },\n  { id: "nvidia/nemotron-3.5-lightning-30b-a3b", name: "Nemotron 3.5 Lightning" },\n];\n\nconst STARTERS = [
   "Build a polished multi-page SaaS website with HTML, CSS, and JavaScript",
   "Create a complete React dashboard with responsive layout",
   "Explain an advanced topic step by step with examples",
@@ -100,7 +100,7 @@ function saveDownload(filename, content, type = "text/plain;charset=utf-8") {
 export default function PrismWorkspace() {
   const [lang, setLang] = useState("en");
   const [mode, setMode] = useState("chat");
-  const [effort, setEffort] = useState("standard");
+  const [effort, setEffort] = useState("standard");\n  const [model, setModel] = useState("deepseek-ai/deepseek-v4.1-flash");
   const [maxOutputTokens, setMaxOutputTokens] = useState(4096);
   const [codeMode, setCodeMode] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -172,7 +172,7 @@ export default function PrismWorkspace() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updated, mode, language: lang, effort, maxOutputTokens, codeMode }), signal: controller.signal,
+        body: JSON.stringify({ messages: updated, mode, language: lang, effort, maxOutputTokens, codeMode, model }), signal: controller.signal,
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -249,7 +249,7 @@ export default function PrismWorkspace() {
           {error && <div className="error-banner"><span>!</span><div>{error}</div><button onClick={() => setError("")} aria-label="Dismiss error"><Icon name="close" size={14}/></button></div>}
         </div>
 
-        <div className="composer-area"><div className="generation-toolbar"><div className="setting-group"><span className="setting-label">{t.settings}</span><select value={effort} onChange={(e) => setEffort(e.target.value)} aria-label="Thinking level"><option value="standard">{t.standard}</option><option value="high">{t.high}</option><option value="max">{t.max}</option></select><select value={maxOutputTokens} onChange={(e) => setMaxOutputTokens(Number(e.target.value))} aria-label={t.output}><option value={4096}>4K {t.output}</option><option value={8192}>8K {t.output}</option><option value={12288}>12K {t.output}</option><option value={16384}>16K {t.output}</option></select></div><label className={`code-mode-toggle ${codeMode ? "code-mode-on" : ""}`}><input type="checkbox" checked={codeMode} onChange={(e) => setCodeMode(e.target.checked)}/><Icon name="code" size={14}/><span>{t.codeMode}</span></label></div>
+        <div className="composer-area"><div className="generation-toolbar"><div className="setting-group"><span className="setting-label">{t.model}</span><select className="model-select" value={model} onChange={(e) => setModel(e.target.value)} aria-label={t.model}>{MODELS.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="setting-label">{t.settings}</span><select value={effort} onChange={(e) => setEffort(e.target.value)} aria-label="Thinking level"><option value="standard">{t.standard}</option><option value="high">{t.high}</option><option value="max">{t.max}</option></select><select value={maxOutputTokens} onChange={(e) => setMaxOutputTokens(Number(e.target.value))} aria-label={t.output}><option value={4096}>4K {t.output}</option><option value={8192}>8K {t.output}</option><option value={12288}>12K {t.output}</option><option value={16384}>16K {t.output}</option></select></div><label className={`code-mode-toggle ${codeMode ? "code-mode-on" : ""}`}><input type="checkbox" checked={codeMode} onChange={(e) => setCodeMode(e.target.checked)}/><Icon name="code" size={14}/><span>{t.codeMode}</span></label></div>
           <form className="composer" onSubmit={(e) => { e.preventDefault(); sendMessage(); }}><textarea ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} placeholder={t.placeholder} rows={3} maxLength={50000} aria-label={t.placeholder}/><div className="composer-bottom"><span className="composer-hint">{mode === "agent" ? t.agentHint : t.chatHint} <span className="hint-divider">·</span> Shift + Enter</span><div className="composer-actions">{busy && <button type="button" className="stop-button" onClick={() => abortRef.current?.abort()} aria-label={t.stop}><Icon name="stop" size={14}/>{t.stop}</button>}<button className="send-button" type="submit" disabled={!input.trim() || busy} aria-label={t.send}><Icon name="send" size={17}/></button></div></div></form><div className="footer-note">{t.disclaimer}</div>
         </div>
       </section>
