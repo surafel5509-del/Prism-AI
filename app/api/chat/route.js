@@ -108,23 +108,34 @@ export async function GET(request) {
       if (!MODEL_IDS.has(requestedModel)) {
         return Response.json({ error: "Unsupported test model." }, { status: 400 });
       }
-      const completion = await ai.chat.completions.create({
-        model: requestedModel,
-        messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
-        max_tokens: 32,
-        temperature: 0,
-        stream: false,
-      });
-      const answer = completion.choices?.[0]?.message?.content;
-      if (typeof answer !== "string" || !answer.trim()) {
-        throw new Error("NVIDIA accepted the request but returned no text.");
+      try {
+        const completion = await ai.chat.completions.create({
+          model: requestedModel,
+          messages: [{ role: "user", content: "Reply with exactly PRISM_API_OK" }],
+          max_tokens: 32,
+          temperature: 0,
+          stream: false,
+        });
+        const answer = completion.choices?.[0]?.message?.content;
+        if (typeof answer !== "string" || !answer.trim()) {
+          throw new Error("NVIDIA accepted the request but returned no text.");
+        }
+        return Response.json({
+          provider: "NVIDIA NIM",
+          completion: "ok",
+          model: requestedModel,
+          answer,
+        }, { headers: { "Cache-Control": "no-store" } });
+      } catch (smokeError) {
+        const message = String(smokeError?.message || "Unknown provider error").replace(/nvapi-[A-Za-z0-9_-]+/gi, "[redacted]");
+        return Response.json({
+          provider: "NVIDIA NIM",
+          completion: "failed",
+          model: requestedModel,
+          providerStatus: smokeError?.status || smokeError?.statusCode || null,
+          providerError: message.slice(0, 500),
+        }, { status: 502, headers: { "Cache-Control": "no-store" } });
       }
-      return Response.json({
-        provider: "NVIDIA NIM",
-        completion: "ok",
-        model: requestedModel,
-        answer,
-      }, { headers: { "Cache-Control": "no-store" } });
     }
     const catalog = await ai.models.list();
     return Response.json({
